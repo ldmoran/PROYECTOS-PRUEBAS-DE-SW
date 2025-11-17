@@ -9,9 +9,9 @@ window.renderUsuarios = function (container) {
         <input id="email" placeholder="Email" required />
         <input id="telefono" placeholder="Teléfono (10 dígitos)" required />
         <select id="membresia">
-          <option value="basica">Basica</option>
-          <option value="premium">Premium</option>
-          <option value="vip">Vip</option>
+          <option value="basica">basica</option>
+          <option value="premium">premium</option>
+          <option value="vip">vip</option>
         </select>
         <button type="submit">Agregar Usuario</button>
       </form>
@@ -49,7 +49,7 @@ window.renderUsuarios = function (container) {
     if (!Array.isArray(data)) return;
     let html = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">';
     data.forEach((u) => {
-      html += `<div class="card" style="background:#fff;padding:8px;border-radius:6px"><div style="font-weight:600">${u.nombreCompleto}</div><div style="font-size:.9rem;color:#666">${u.email}</div><div style="margin-top:.5rem"><span style="background:#eee;padding:.2rem .5rem;border-radius:4px;font-size:.8rem">${u.membresia}</span></div><div style="margin-top:.5rem"><button data-id="${u.id}" class="edit"><i class="fas fa-edit"></i> Editar</button><button data-id="${u.id}" class="del"><i class="fas fa-trash"></i> Eliminar</button></div></div>`;
+      html += `<div class="card" style="background:#fff;padding:8px;border-radius:6px"><div style="font-weight:600">${u.nombreCompleto}</div><div style="font-size:.9rem;color:#666">${u.email}</div><div style="margin-top:.5rem"><span style="background:#eee;padding:.2rem .5rem;border-radius:4px;font-size:.8rem">${u.membresia}</span></div><div class="actions" style="margin-top:.5rem"><button data-id="${u.id}" class="edit"><i class="fas fa-edit"></i> Editar</button><button data-id="${u.id}" class="del"><i class="fas fa-trash"></i> Eliminar</button></div></div>`;
     });
     html += '</div>';
     el.innerHTML = html;
