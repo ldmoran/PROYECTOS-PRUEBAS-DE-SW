@@ -1,6 +1,6 @@
 const initialLibros = [
-  { id: '1', titulo: 'Cien años de soledad', autor: 'Gabriel García Márquez', isbn: '978-0307474728', ejemplares_totales: 5, ejemplares_disponibles: 3 },
-  { id: '2', titulo: 'Don Quijote de la Mancha', autor: 'Miguel de Cervantes', isbn: '978-8424119958', ejemplares_totales: 10, ejemplares_disponibles: 10 },
+  { id: '1', titulo: 'Cien años de soledad', autor: 'Gabriel García Márquez', isbn: '978-0307474728', ejemplaresTotales: 5, ejemplaresDisponibles: 3 },
+  { id: '2', titulo: 'Don Quijote de la Mancha', autor: 'Miguel de Cervantes', isbn: '978-8424119958', ejemplaresTotales: 10, ejemplaresDisponibles: 10 },
 ];
 
 class AppError extends Error {
@@ -26,13 +26,13 @@ class LibroService {
   }
 
   create(data) {
-    const { titulo, autor, isbn, ejemplares_totales } = data;
+    const { titulo, autor, isbn, ejemplaresTotales } = data;
 
-    if (!titulo || !autor || !isbn || ejemplares_totales == null) {
-      throw new AppError('Faltan campos obligatorios (titulo, autor, isbn, ejemplares_totales)', 400);
+    if (!titulo || !autor || !isbn || ejemplaresTotales === null || ejemplaresTotales === undefined) {
+      throw new AppError('Faltan campos obligatorios (titulo, autor, isbn, ejemplaresTotales)', 400);
     }
 
-    if (!Number.isInteger(ejemplares_totales) || ejemplares_totales <= 0) {
+    if (!Number.isInteger(ejemplaresTotales) || ejemplaresTotales <= 0) {
       throw new AppError('Ejemplares totales debe ser un número entero positivo', 400);
     }
 
@@ -45,8 +45,8 @@ class LibroService {
       titulo,
       autor,
       isbn,
-      ejemplares_totales,
-      ejemplares_disponibles: ejemplares_totales
+      ejemplaresTotales,
+      ejemplaresDisponibles: ejemplaresTotales
     };
 
     this.libros.push(nuevo);
@@ -58,33 +58,33 @@ class LibroService {
     if (idx === -1) throw new AppError('Libro no encontrado', 404);
 
     const existing = this.libros[idx];
-    const { titulo, autor, isbn, ejemplares_totales } = data;
+    const { titulo, autor, isbn, ejemplaresTotales } = data;
 
     if (isbn !== undefined && this.libros.some((l, i) => l.isbn === isbn && i !== idx)) {
       throw new AppError('Ya existe un libro con este ISBN', 409);
     }
 
-    if (ejemplares_totales !== undefined) {
-      if (!Number.isInteger(ejemplares_totales) || ejemplares_totales <= 0) {
+    if (ejemplaresTotales !== undefined) {
+      if (!Number.isInteger(ejemplaresTotales) || ejemplaresTotales <= 0) {
         throw new AppError('Ejemplares totales debe ser un número entero positivo', 400);
       }
-      const prestados = existing.ejemplares_totales - existing.ejemplares_disponibles;
-      if (ejemplares_totales < prestados) {
+      const prestados = existing.ejemplaresTotales - existing.ejemplaresDisponibles;
+      if (ejemplaresTotales < prestados) {
         throw new AppError(`No se puede reducir el total por debajo de los ${prestados} ejemplares prestados`, 400);
       }
     }
 
-    const nuevos_disponibles = ejemplares_totales !== undefined 
-      ? existing.ejemplares_disponibles + (ejemplares_totales - existing.ejemplares_totales)
-      : existing.ejemplares_disponibles;
+    const nuevosDisponibles = ejemplaresTotales !== undefined 
+      ? existing.ejemplaresDisponibles + (ejemplaresTotales - existing.ejemplaresTotales)
+      : existing.ejemplaresDisponibles;
 
     const updated = {
       id: existing.id,
       titulo: titulo ?? existing.titulo,
       autor: autor ?? existing.autor,
       isbn: isbn ?? existing.isbn,
-      ejemplares_totales: ejemplares_totales ?? existing.ejemplares_totales,
-      ejemplares_disponibles: nuevos_disponibles
+      ejemplaresTotales: ejemplaresTotales ?? existing.ejemplaresTotales,
+      ejemplaresDisponibles: nuevosDisponibles
     };
 
     this.libros[idx] = updated;
@@ -94,7 +94,7 @@ class LibroService {
   delete(id) {
     const idx = this.libros.findIndex(l => String(l.id) === String(id));
     if (idx === -1) throw new AppError('Libro no encontrado', 404);
-    if (this.libros[idx].ejemplares_disponibles < this.libros[idx].ejemplares_totales) {
+    if (this.libros[idx].ejemplaresDisponibles < this.libros[idx].ejemplaresTotales) {
       throw new AppError('No se puede eliminar el libro, hay ejemplares prestados', 409);
     }
     this.libros.splice(idx, 1);

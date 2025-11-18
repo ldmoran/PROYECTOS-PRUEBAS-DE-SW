@@ -32,7 +32,7 @@ app.get('/health', (req, res) => {
 const publicPath = path.join(__dirname, 'public');
 app.use(express.static(publicPath));
 
-app.use((req, res, next) => {
+app.use((req, res) => {
   res.status(404).json(errorResponse(404, 'Recurso no encontrado', req.originalUrl));
 });
 

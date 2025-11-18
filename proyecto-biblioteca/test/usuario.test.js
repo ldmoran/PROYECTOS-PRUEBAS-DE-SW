@@ -20,6 +20,21 @@ describe('Usuario API', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  test('Error por email inválido (400)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Test', email: 'invalid-email', telefono: '0987654322', membresia: 'vip' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error por telefono inválido (400)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Test', email: 'test@example.com', telefono: '123', membresia: 'vip' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error por membresia inválida (400)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Test', email: 'test2@example.com', telefono: '0987654322', membresia: 'invalid' });
+    expect(res.statusCode).toBe(400);
+  });
+
   test('Error por nombreCompleto siendo número (400)', async () => {
     const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: '1234', email: 'n1@example.com', telefono: '0987654322', membresia: 'vip' });
     expect(res.statusCode).toBe(400);
@@ -34,6 +49,78 @@ describe('Usuario API', () => {
   test('Obtener usuario por ID (200)', async () => {
     const res = await request(app).get('/api/anthonymorales/usuarios/' + createdId);
     expect(res.statusCode).toBe(200);
+  });
+
+  test('Error al obtener usuario inexistente (404)', async () => {
+    const res = await request(app).get('/api/anthonymorales/usuarios/invalid-id');
+    expect(res.statusCode).toBe(404);
+  });
+
+  test('Actualizar usuario válido (200)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      nombreCompleto: 'Carlos Ruiz Actualizado', 
+      email: 'carlos.updated@example.com', 
+      telefono: '0987654999', 
+      membresia: 'premium' 
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.body.nombreCompleto).toBe('Carlos Ruiz Actualizado');
+  });
+
+  test('Error al actualizar con email duplicado (409)', async () => {
+    // Crear otro usuario
+    await request(app).post('/api/anthonymorales/usuarios').send({ 
+      nombreCompleto: 'Otro Usuario', 
+      email: 'otro@example.com', 
+      telefono: '0987654888', 
+      membresia: 'basica' 
+    });
+    
+    // Intentar actualizar con email que ya existe
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      email: 'otro@example.com'
+    });
+    expect(res.statusCode).toBe(409);
+  });
+
+  test('Error al actualizar usuario inexistente (404)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/invalid-id').send({ 
+      nombreCompleto: 'Test'
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  test('Error al actualizar con email inválido (400)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      email: 'email-invalido'
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error al actualizar con telefono inválido (400)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      telefono: '123'
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error al actualizar con membresia inválida (400)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      membresia: 'invalida'
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error al actualizar con nombreCompleto número (400)', async () => {
+    const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
+      nombreCompleto: '123'
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error al eliminar usuario inexistente (404)', async () => {
+    const res = await request(app).delete('/api/anthonymorales/usuarios/invalid-id');
+    expect(res.statusCode).toBe(404);
   });
 
   test('Eliminar usuario y verificar eliminación', async () => {

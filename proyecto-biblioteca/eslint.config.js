@@ -31,7 +31,15 @@ module.exports = [
       'no-unused-vars': 'error',
       quotes: ['error', 'single'],
       semi: ['error', 'always'],
-      'max-lines-per-function': ['error', 20]
+      'max-lines-per-function': ['error', 40]
+    }
+  },
+  {
+    // Configuración especial para archivos del frontend
+    files: ['src/public/js/**/*.js'],
+    rules: {
+      'no-console': 'off', // Permitir console en frontend para debugging
+      'max-lines-per-function': ['error', 100] // Permitir funciones más largas en UI
     }
   }
 ];
