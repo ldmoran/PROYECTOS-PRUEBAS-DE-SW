@@ -31,6 +31,11 @@ describe('Usuario API', () => {
     expect(res.statusCode).toBe(404);
   });
 
+  test('Error por email duplicado (409)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Otro', email: 'carlos@example.com', telefono: '0987654322', membresia: 'vip' });
+    expect(res.statusCode).toBe(409);
+  });
+
   test('Actualizar usuario válido (200)', async () => {
     const res = await request(app).put('/api/anthonymorales/usuarios/' + createdId).send({ 
       nombreCompleto: 'Carlos Ruiz Actualizado', 
@@ -56,24 +61,7 @@ describe('Usuario API', () => {
     expect(res.statusCode).toBe(400);
   });
 
-  test('Error al eliminar usuario inexistente (404)', async () => {
-    const res = await request(app).delete('/api/anthonymorales/usuarios/invalid-id');
-    expect(res.statusCode).toBe(404);
-  });
-
-  test('Eliminar usuario y verificar eliminación', async () => {
-    const res1 = await request(app).delete('/api/anthonymorales/usuarios/' + createdId);
-    expect(res1.statusCode).toBe(204);
-    const res2 = await request(app).get('/api/anthonymorales/usuarios/' + createdId);
-    expect(res2.statusCode).toBe(404);
-  });
-
   // Tests de validaciones para el email 
-
-  test('Error por email duplicado (409)', async () => {
-    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Otro', email: 'carlos@example.com', telefono: '0987654322', membresia: 'vip' });
-    expect(res.statusCode).toBe(409);
-  });
 
   test('Error por email vacío (400)', async () => {
     const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'X', email: '', telefono: '0987654322', membresia: 'vip' });
@@ -169,5 +157,17 @@ describe('Usuario API', () => {
       membresia: 'invalida'
     });
     expect(res.statusCode).toBe(400);
+  });
+
+  test('Error al eliminar usuario inexistente (404)', async () => {
+    const res = await request(app).delete('/api/anthonymorales/usuarios/invalid-id');
+    expect(res.statusCode).toBe(404);
+  });
+
+  test('Eliminar usuario y verificar eliminación', async () => {
+    const res1 = await request(app).delete('/api/anthonymorales/usuarios/' + createdId);
+    expect(res1.statusCode).toBe(204);
+    const res2 = await request(app).get('/api/anthonymorales/usuarios/' + createdId);
+    expect(res2.statusCode).toBe(404);
   });
 });
