@@ -1,0 +1,7 @@
+npx jest test/empleado.test.js --collectCoverageFrom="src/controllers/empleado.controller.js" --collectCoverageFrom="src/routes/empleado.routes.js"
+
+npx jest test/libro.test.js --collectCoverageFrom="src/controllers/libro.controller.js" --collectCoverageFrom="src/routes/libro.routes.js"
+
+npx jest test/proveedor.test.js --collectCoverageFrom="src/controllers/proveedor.controller.js" --collectCoverageFrom="src/routes/proveedor.routes.js"
+
+npx jest test/usuario.test.js --collectCoverageFrom="src/controllers/usuario.controller.js" --collectCoverageFrom="src/routes/usuario.routes.js"
