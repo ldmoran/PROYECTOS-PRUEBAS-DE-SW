@@ -4,7 +4,7 @@
   "description": "Sistema Integral de Biblioteca - Node.js + Express + SPA",
   "main": "src/app.js",
   "scripts": {
-    "start": "node -e \"require('./src/app')\"",
+    "start": "node src/app.js",    
     "test": "jest --coverage",
     "lint": "eslint src/**/*.js test/**/*.js",
     "lint:fix": "eslint src/**/*.js test/**/*.js --fix"
