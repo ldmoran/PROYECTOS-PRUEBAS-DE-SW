@@ -147,6 +147,16 @@ describe('Usuario API', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  test('Error por telefono null (400)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Ariel', email: 'ariel@example.com', telefono: null, membresia: 'vip' });
+    expect(res.statusCode).toBe(400);
+  });
+
+  test('Error por telefono indefinido (400)', async () => {
+    const res = await request(app).post('/api/anthonymorales/usuarios').send({ nombreCompleto: 'Ariel', email: 'ariel@example.com', membresia: 'vip' });
+    expect(res.statusCode).toBe(400);
+  });
+
   // Tests de validaciones para la membresía
 
   test('Error por membresia inválida (400)', async () => {
