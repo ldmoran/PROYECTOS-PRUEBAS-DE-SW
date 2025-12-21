@@ -1,76 +1,90 @@
-const validCargos = ['bibliotecario', 'administrador', 'auxiliar'];
-const empleados = [];
+const Empleado = require('../models/empleado.model');
 
-function findById(id) {
-  return empleados.find((e) => String(e.id) === String(id));
+// Listar empleados
+async function list(req, res) {
+  try {
+    const empleados = await Empleado.find();
+    const adaptados = empleados.map(e => ({
+      id: e._id,
+      nombre: e.nombre,
+      cargo: e.cargo,
+      salario: e.salario,
+      fechaContratacion: e.fechaContratacion,
+      email: e.email
+    }));
+    res.json(adaptados);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener empleados', error: err.message });
+  }
 }
 
-function list(req, res) {
-  res.json(empleados);
+// Crear empleado
+async function create(req, res) {
+  try {
+    const { nombre, cargo, salario, fechaContratacion, email } = req.body;
+    if (!nombre) {
+      return res.status(400).json({ message: 'El nombre es obligatorio' });
+    }
+    if (!cargo) {
+      return res.status(400).json({ message: 'El cargo es obligatorio' });
+    }
+    if (typeof salario !== 'number' || salario <= 0) {
+      return res.status(400).json({ message: 'El salario debe ser un número positivo' });
+    }
+    const existe = await Empleado.findOne({ nombre });
+    if (existe) return res.status(409).json({ message: 'El empleado ya existe' });
+    const empleado = await Empleado.create({ nombre, cargo, salario, fechaContratacion, email });
+    res.status(201).json(empleado);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al crear empleado', error: err.message });
+  }
 }
 
-function create(req, res) {
-  const { nombre, cargo, salario, fechaContratacion } = req.body;
-  if (!nombre || String(Number(nombre)) === nombre) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'El nombre no puede ser vacío ni número', path: req.originalUrl });
+// Obtener empleado por ID
+async function getById(req, res) {
+  try {
+    const empleado = await Empleado.findById(req.params.id);
+    if (!empleado) return res.status(404).json({ message: 'Empleado no encontrado' });
+    res.json({
+      id: empleado._id,
+      nombre: empleado.nombre,
+      cargo: empleado.cargo,
+      salario: empleado.salario,
+      fechaContratacion: empleado.fechaContratacion,
+      email: empleado.email
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al obtener empleado', error: err.message });
   }
-  if (!validCargos.includes(cargo)) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'Cargo inválido', path: req.originalUrl });
-  }
-  if (typeof salario !== 'number' || salario <= 0) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'Salario debe ser número positivo', path: req.originalUrl });
-  }
-  if (empleados.some((e) => e.nombre === nombre)) {
-    return res.status(409).json({ timestamp: new Date().toISOString(), status: 409, message: 'El empleado ya existe', path: req.originalUrl });
-  }
-  const nuevo = { id: Date.now().toString(), nombre, cargo, salario, fechaContratacion: fechaContratacion || new Date().toISOString() };
-  empleados.push(nuevo);
-  res.status(201).json(nuevo);
 }
 
-function getById(req, res) {
-  const item = findById(req.params.id);
-  if (!item) {
-    return res.status(404).json({ timestamp: new Date().toISOString(), status: 404, message: 'Empleado no encontrado', path: req.originalUrl });
+// Eliminar empleado
+async function remove(req, res) {
+  try {
+    const empleado = await Empleado.findByIdAndDelete(req.params.id);
+    if (!empleado) return res.status(404).json({ message: 'Empleado no encontrado' });
+    res.status(204).end();
+  } catch (err) {
+    res.status(500).json({ message: 'Error al eliminar empleado', error: err.message });
   }
-  res.json(item);
 }
 
-function remove(req, res) {
-  const idx = empleados.findIndex((e) => String(e.id) === String(req.params.id));
-  if (idx === -1) {
-    return res.status(404).json({ timestamp: new Date().toISOString(), status: 404, message: 'Empleado no encontrado', path: req.originalUrl });
+// Actualizar empleado
+async function update(req, res) {
+  try {
+    const { nombre, cargo, salario, fechaContratacion, email } = req.body;
+    const empleado = await Empleado.findById(req.params.id);
+    if (!empleado) return res.status(404).json({ message: 'Empleado no encontrado' });
+    if (nombre !== undefined) empleado.nombre = nombre;
+    if (cargo !== undefined) empleado.cargo = cargo;
+    if (salario !== undefined) empleado.salario = salario;
+    if (fechaContratacion !== undefined) empleado.fechaContratacion = fechaContratacion;
+    if (email !== undefined) empleado.email = email;
+    await empleado.save();
+    res.json(empleado);
+  } catch (err) {
+    res.status(500).json({ message: 'Error al actualizar empleado', error: err.message });
   }
-  empleados.splice(idx, 1);
-  res.status(204).end();
 }
 
-function update(req, res) {
-  const idx = empleados.findIndex((e) => String(e.id) === String(req.params.id));
-  if (idx === -1) {
-    return res.status(404).json({ timestamp: new Date().toISOString(), status: 404, message: 'Empleado no encontrado', path: req.originalUrl });
-  }
-  const { nombre, cargo, salario, fechaContratacion } = req.body;
-  if (nombre && String(Number(nombre)) === nombre) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'El nombre no puede ser un número', path: req.originalUrl });
-  }
-  if (cargo && !validCargos.includes(cargo)) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'Cargo inválido', path: req.originalUrl });
-  }
-  if (salario !== undefined && (typeof salario !== 'number' || salario <= 0)) {
-    return res.status(400).json({ timestamp: new Date().toISOString(), status: 400, message: 'Salario debe ser número positivo', path: req.originalUrl });
-  }
-  if (nombre && empleados.some((e, i) => e.nombre === nombre && i !== idx)) {
-    return res.status(409).json({ timestamp: new Date().toISOString(), status: 409, message: 'El empleado ya existe', path: req.originalUrl });
-  }
-  const existing = empleados[idx];
-  empleados[idx] = Object.assign({}, existing, {
-    nombre: nombre !== undefined ? nombre : existing.nombre,
-    cargo: cargo !== undefined ? cargo : existing.cargo,
-    salario: salario !== undefined ? salario : existing.salario,
-    fechaContratacion: fechaContratacion !== undefined ? fechaContratacion : existing.fechaContratacion
-  });
-  res.json(empleados[idx]);
-}
-
-module.exports = { list, create, getById, remove, update, empleados };
+module.exports = { list, create, getById, remove, update };
