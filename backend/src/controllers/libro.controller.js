@@ -1,154 +1,105 @@
-const initialLibros = [
-  { id: '1', titulo: 'Cien años de soledad', autor: 'Gabriel García Márquez', isbn: '978-0307474728', ejemplaresTotales: 5, ejemplaresDisponibles: 3 },
-  { id: '2', titulo: 'Don Quijote de la Mancha', autor: 'Miguel de Cervantes', isbn: '978-8424119958', ejemplaresTotales: 10, ejemplaresDisponibles: 10 },
-];
+const Libro = require('../models/libro.model');
 
-class AppError extends Error {
-  constructor(message, status = 400) {
-    super(message);
-    this.status = status;
-  }
-}
-
-class LibroService {
-  constructor(initialData = initialLibros) {
-    this.libros = initialData.map(l => ({ ...l }));
-  }
-
-  getAll() {
-    return this.libros;
-  }
-
-  findById(id) {
-    const libro = this.libros.find(l => String(l.id) === String(id));
-    if (!libro) throw new AppError('Libro no encontrado', 404);
-    return libro;
-  }
-
-  create(data) {
-    const { titulo, autor, isbn, ejemplaresTotales } = data;
-
-    if (!titulo || !autor || !isbn || ejemplaresTotales === null || ejemplaresTotales === undefined) {
-      throw new AppError('Faltan campos obligatorios (titulo, autor, isbn, ejemplaresTotales)', 400);
-    }
-
-    if (!Number.isInteger(ejemplaresTotales) || ejemplaresTotales <= 0) {
-      throw new AppError('Ejemplares totales debe ser un número entero positivo', 400);
-    }
-
-    if (this.libros.some(l => l.isbn === isbn)) {
-      throw new AppError('Ya existe un libro con este ISBN', 409);
-    }
-
-    const nuevo = {
-      id: Date.now().toString(),
-      titulo,
-      autor,
-      isbn,
-      ejemplaresTotales,
-      ejemplaresDisponibles: ejemplaresTotales
-    };
-
-    this.libros.push(nuevo);
-    return nuevo;
-  }
-
-  update(id, data) {
-    const idx = this.libros.findIndex(l => String(l.id) === String(id));
-    if (idx === -1) throw new AppError('Libro no encontrado', 404);
-
-    const existing = this.libros[idx];
-    const { titulo, autor, isbn, ejemplaresTotales } = data;
-
-    if (isbn !== undefined && this.libros.some((l, i) => l.isbn === isbn && i !== idx)) {
-      throw new AppError('Ya existe un libro con este ISBN', 409);
-    }
-
-    if (ejemplaresTotales !== undefined) {
-      if (!Number.isInteger(ejemplaresTotales) || ejemplaresTotales <= 0) {
-        throw new AppError('Ejemplares totales debe ser un número entero positivo', 400);
-      }
-      const prestados = existing.ejemplaresTotales - existing.ejemplaresDisponibles;
-      if (ejemplaresTotales < prestados) {
-        throw new AppError(`No se puede reducir el total por debajo de los ${prestados} ejemplares prestados`, 400);
-      }
-    }
-
-    const nuevosDisponibles = ejemplaresTotales !== undefined 
-      ? existing.ejemplaresDisponibles + (ejemplaresTotales - existing.ejemplaresTotales)
-      : existing.ejemplaresDisponibles;
-
-    const updated = {
-      id: existing.id,
-      titulo: titulo ?? existing.titulo,
-      autor: autor ?? existing.autor,
-      isbn: isbn ?? existing.isbn,
-      ejemplaresTotales: ejemplaresTotales ?? existing.ejemplaresTotales,
-      ejemplaresDisponibles: nuevosDisponibles
-    };
-
-    this.libros[idx] = updated;
-    return updated;
-  }
-
-  delete(id) {
-    const idx = this.libros.findIndex(l => String(l.id) === String(id));
-    if (idx === -1) throw new AppError('Libro no encontrado', 404);
-    if (this.libros[idx].ejemplaresDisponibles < this.libros[idx].ejemplaresTotales) {
-      throw new AppError('No se puede eliminar el libro, hay ejemplares prestados', 409);
-    }
-    this.libros.splice(idx, 1);
-  }
-}
-
-const libroService = new LibroService(initialLibros);
-
-const handleError = (err, req, res) => {
-  const status = err.status || 500;
-  res.status(status).json({
-    timestamp: new Date().toISOString(),
-    status,
-    message: err.message,
-    path: req.originalUrl
-  });
-};
-
-const list = (req, res) => res.json(libroService.getAll());
-
-const create = (req, res) => {
+// Listar todos los libros (adaptar campos para frontend)
+const list = async (req, res) => {
   try {
-    const nuevo = libroService.create(req.body);
-    res.status(201).json(nuevo);
+    const libros = await Libro.find();
+    // Adaptar los campos para compatibilidad con frontend
+    const adaptados = libros.map(l => ({
+      id: l._id,
+      titulo: l.nombre,
+      autor: l.autor,
+      isbn: l.isbn,
+      ejemplaresTotales: l.ejemplares,
+      ejemplaresDisponibles: l.ejemplares, // Si tienes lógica de préstamos, cámbialo
+    }));
+    res.json(adaptados);
   } catch (err) {
-    handleError(err, req, res);
+    res.status(500).json({ message: 'Error al obtener libros', error: err.message });
   }
 };
 
-const getById = (req, res) => {
+// Crear un libro (acepta nombre/titulo y ejemplares/ejemplaresTotales)
+const create = async (req, res) => {
   try {
-    const libro = libroService.findById(req.params.id);
-    res.json(libro);
+    let { nombre, titulo, autor, anio, ejemplares, ejemplaresTotales, isbn } = req.body;
+    // Compatibilidad: si viene 'titulo', úsalo como 'nombre'
+    if (!nombre && titulo) nombre = titulo;
+    // Compatibilidad: si viene 'ejemplaresTotales', úsalo como 'ejemplares'
+    if (ejemplares === undefined && ejemplaresTotales !== undefined) ejemplares = ejemplaresTotales;
+    if (!nombre || !autor || ejemplares === undefined) {
+      return res.status(400).json({ message: 'Faltan campos obligatorios (nombre/titulo, autor, ejemplares/ejemplaresTotales)' });
+    }
+    const existe = await Libro.findOne({ nombre });
+    if (existe) return res.status(409).json({ message: 'Ya existe un libro con ese nombre' });
+    const libro = await Libro.create({ nombre, autor, anio, ejemplares, isbn });
+    res.status(201).json({
+      id: libro._id,
+      titulo: libro.nombre,
+      autor: libro.autor,
+      isbn: libro.isbn,
+      ejemplaresTotales: libro.ejemplares,
+      ejemplaresDisponibles: libro.ejemplares
+    });
   } catch (err) {
-    handleError(err, req, res);
+    res.status(500).json({ message: 'Error al crear libro', error: err.message });
   }
 };
 
-const update = (req, res) => {
+// Obtener libro por ID (adaptar campos)
+const getById = async (req, res) => {
   try {
-    const updated = libroService.update(req.params.id, req.body);
-    res.json(updated);
+    const libro = await Libro.findById(req.params.id);
+    if (!libro) return res.status(404).json({ message: 'Libro no encontrado' });
+    res.json({
+      id: libro._id,
+      titulo: libro.nombre,
+      autor: libro.autor,
+      isbn: libro.isbn,
+      ejemplaresTotales: libro.ejemplares,
+      ejemplaresDisponibles: libro.ejemplares
+    });
   } catch (err) {
-    handleError(err, req, res);
+    res.status(500).json({ message: 'Error al obtener libro', error: err.message });
   }
 };
 
-const remove = (req, res) => {
+// Actualizar libro (adaptar campos)
+const update = async (req, res) => {
   try {
-    libroService.delete(req.params.id);
+    let { nombre, titulo, autor, anio, ejemplares, ejemplaresTotales, isbn } = req.body;
+    if (!nombre && titulo) nombre = titulo;
+    if (ejemplares === undefined && ejemplaresTotales !== undefined) ejemplares = ejemplaresTotales;
+    const libro = await Libro.findById(req.params.id);
+    if (!libro) return res.status(404).json({ message: 'Libro no encontrado' });
+    if (nombre !== undefined) libro.nombre = nombre;
+    if (autor !== undefined) libro.autor = autor;
+    if (anio !== undefined) libro.anio = anio;
+    if (ejemplares !== undefined) libro.ejemplares = ejemplares;
+    if (isbn !== undefined) libro.isbn = isbn;
+    await libro.save();
+    res.json({
+      id: libro._id,
+      titulo: libro.nombre,
+      autor: libro.autor,
+      isbn: libro.isbn,
+      ejemplaresTotales: libro.ejemplares,
+      ejemplaresDisponibles: libro.ejemplares
+    });
+  } catch (err) {
+    res.status(500).json({ message: 'Error al actualizar libro', error: err.message });
+  }
+};
+
+// Eliminar libro
+const remove = async (req, res) => {
+  try {
+    const libro = await Libro.findByIdAndDelete(req.params.id);
+    if (!libro) return res.status(404).json({ message: 'Libro no encontrado' });
     res.status(204).end();
   } catch (err) {
-    handleError(err, req, res);
+    res.status(500).json({ message: 'Error al eliminar libro', error: err.message });
   }
 };
 
-module.exports = { list, create, getById, update, remove, LibroService };
+module.exports = { list, create, getById, update, remove };

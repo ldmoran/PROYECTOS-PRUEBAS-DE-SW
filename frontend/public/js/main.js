@@ -60,6 +60,13 @@ function loadModule(module, content) {
         content.innerHTML = '<p>Error: Módulo de proveedores no disponible</p>';
       }
       break;
+    case 'auth-prestamos':
+      if (typeof window.renderAuthAndPrestamos === 'function') {
+        window.renderAuthAndPrestamos(content);
+      } else {
+        content.innerHTML = '<p>Error: Módulo de préstamos no disponible</p>';
+      }
+      break;
     default:
       content.innerHTML = '<p>Módulo no encontrado</p>';
   }
